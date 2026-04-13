@@ -172,4 +172,4 @@ SkillCrew is more than an AI demo. It is a full-stack, multi-agent scaffold for 
 
 ---
 
-Built for rapid AI learning product development and experimentation, Antigravity / SkillCrew is an ideal starting point for anyone creating next-generation learning assistants.
+Built for rapid AI learning product development and experimentation, SkillCrew is an ideal starting point for anyone creating next-generation learning assistants.
