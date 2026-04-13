@@ -8,6 +8,12 @@ out/
 # turbopack / cache
 frontend/dev/cache/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
 # env files (VERY IMPORTANT)
 .env
 .env.local
