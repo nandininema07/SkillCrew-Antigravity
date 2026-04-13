@@ -1,4 +1,4 @@
-# Antigravity / SkillCrew
+# SkillCrew
 
 > Autonomous AI-driven learning platform that transforms learner onboarding, planning, content curation, assessment, and motivation into one intelligent experience.
 
@@ -164,7 +164,7 @@ The frontend also relies on public Supabase and backend secrets for API access.
 SkillCrew is more than an AI demo. It is a full-stack, multi-agent scaffold for intelligent learning systems that can onboard real learners, create meaningful study journeys, and keep them engaged over time. The architecture is designed for experimentation, extension, and production-grade learning automation.
 
 
-## Developers
+## Developers - Team Antigravity
 * [Nandini](https://github.com/nandininema07)
 * [Atharva](https://github.com/atharva-0932)
 * [Parv](https://github.com/ParvSiria)
