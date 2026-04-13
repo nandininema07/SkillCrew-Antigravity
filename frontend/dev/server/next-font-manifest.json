@@ -1,0 +1,19 @@
+{
+  "app": {
+    "[project]/Projects/Antigravity/app/_not-found/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/Projects/Antigravity/app/auth/login/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ],
+    "[project]/Projects/Antigravity/app/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2",
+      "static/media/797e433ab948586e-s.p.0.q-h669a_dqa.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

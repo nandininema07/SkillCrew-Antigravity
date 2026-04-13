@@ -1,0 +1,4 @@
+{"timestamp":"00:00:02.449","source":"Server","level":"WARN","message":"⚠ The \"middleware\" file convention is deprecated. Please use \"proxy\" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy"}
+{"timestamp":"00:00:02.811","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:14.457","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:23.292","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}

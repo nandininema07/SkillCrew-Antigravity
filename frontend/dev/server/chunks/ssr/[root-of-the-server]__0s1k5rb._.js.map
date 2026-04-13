@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 28, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Nandini%20Nema/Projects/Antigravity/components/ui/sonner.tsx"],"sourcesContent":["'use client'\n\nimport { useTheme } from 'next-themes'\nimport { Toaster as Sonner, ToasterProps } from 'sonner'\n\nconst Toaster = ({ ...props }: ToasterProps) => {\n  const { theme = 'system' } = useTheme()\n\n  return (\n    <Sonner\n      theme={theme as ToasterProps['theme']}\n      className=\"toaster group\"\n      style={\n        {\n          '--normal-bg': 'var(--popover)',\n          '--normal-text': 'var(--popover-foreground)',\n          '--normal-border': 'var(--border)',\n        } as React.CSSProperties\n      }\n      {...props}\n    />\n  )\n}\n\nexport { Toaster }\n"],"names":["Toaster","props","theme","className","style"],"mappings":";;;;;AAEA;AACA;AAHA;;;;AAKA,MAAMA,UAAU,CAAC,EAAE,GAAGC,OAAqB;IACzC,MAAM,EAAEC,QAAQ,QAAQ,EAAE,GAAG,IAAA,uLAAQ;IAErC,qBACE,yQAAC,8KAAM;QACLA,OAAOA;QACPC,WAAU;QACVC,OACE;YACE,eAAe;YACf,iBAAiB;YACjB,mBAAmB;QACrB;QAED,GAAGH,KAAK;;;;;;AAGf"}}]
+}

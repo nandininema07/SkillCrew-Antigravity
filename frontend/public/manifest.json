@@ -1,0 +1,38 @@
+{
+  "name": "SkillCrew - Autonomous Learning Agents",
+  "short_name": "SkillCrew",
+  "description": "Your Learning Crew: Autonomous AI Agents for Skill Mastery",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#023142",
+  "theme_color": "#023142",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "Go to learning dashboard"
+    },
+    {
+      "name": "Revision Lab",
+      "url": "/revision",
+      "description": "Open revision tools"
+    }
+  ]
+}

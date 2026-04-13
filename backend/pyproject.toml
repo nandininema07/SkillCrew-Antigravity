@@ -1,0 +1,6 @@
+[tool.pyright]
+# Use backend/.venv so Pylance resolves third-party imports (e.g. pydantic_settings).
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+include = ["."]
