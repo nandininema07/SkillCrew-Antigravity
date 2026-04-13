@@ -1,9 +1,14 @@
-.env
-# Virtual Environment
-backend/venv/
-venv/
-ENV/
+# dependencies
+node_modules/
 
-# Python Cache
-**/__pycache__/
-*.pyc
+# Next.js
+.next/
+out/
+
+# turbopack / cache
+frontend/dev/cache/
+
+# env files (VERY IMPORTANT)
+.env
+.env.local
+.env.*
