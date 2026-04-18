@@ -93,6 +93,9 @@ export default function SettingsPage() {
   const [digestForm, setDigestForm] = useState({
     notify_whatsapp_digest: true,
     notify_voice_daily_learning: false,
+    notify_whatsapp_login: true,
+    notify_whatsapp_checkpoint: true,
+    notify_whatsapp_milestone: true,
     sparky_digest_local_time: '18:00',
     sparky_digest_timezone:
       typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC',
@@ -121,6 +124,9 @@ export default function SettingsPage() {
         setDigestForm({
           notify_whatsapp_digest: data.notify_whatsapp_digest !== false,
           notify_voice_daily_learning: data.notify_voice_daily_learning === true,
+          notify_whatsapp_login: data.notify_whatsapp_login !== false,
+          notify_whatsapp_checkpoint: data.notify_whatsapp_checkpoint !== false,
+          notify_whatsapp_milestone: data.notify_whatsapp_milestone !== false,
           sparky_digest_local_time: normalizeDigestTime(data.sparky_digest_local_time),
           sparky_digest_timezone: SPARKY_TIMEZONES.includes(tzRaw as (typeof SPARKY_TIMEZONES)[number])
             ? tzRaw
@@ -188,6 +194,9 @@ export default function SettingsPage() {
           ...formData,
           notify_whatsapp_digest: digestForm.notify_whatsapp_digest,
           notify_voice_daily_learning: digestForm.notify_voice_daily_learning,
+          notify_whatsapp_login: digestForm.notify_whatsapp_login,
+          notify_whatsapp_checkpoint: digestForm.notify_whatsapp_checkpoint,
+          notify_whatsapp_milestone: digestForm.notify_whatsapp_milestone,
           sparky_digest_local_time: digestForm.sparky_digest_local_time,
           sparky_digest_timezone: digestForm.sparky_digest_timezone,
         }),
@@ -699,6 +708,49 @@ export default function SettingsPage() {
                     checked={digestForm.notify_voice_daily_learning}
                     onCheckedChange={(checked) =>
                       setDigestForm((prev) => ({ ...prev, notify_voice_daily_learning: checked }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div>
+                    <h4 className="font-medium">Login welcome (WhatsApp)</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Short welcome when you open the dashboard (at most once per UTC day)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={digestForm.notify_whatsapp_login}
+                    onCheckedChange={(checked) =>
+                      setDigestForm((prev) => ({ ...prev, notify_whatsapp_login: checked }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div>
+                    <h4 className="font-medium">Pip checkpoint score (WhatsApp)</h4>
+                    <p className="text-sm text-muted-foreground">Message with your quiz score after each weekly checkpoint</p>
+                  </div>
+                  <Switch
+                    checked={digestForm.notify_whatsapp_checkpoint}
+                    onCheckedChange={(checked) =>
+                      setDigestForm((prev) => ({ ...prev, notify_whatsapp_checkpoint: checked }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div>
+                    <h4 className="font-medium">Milestone progress (WhatsApp)</h4>
+                    <p className="text-sm text-muted-foreground">
+                      When you complete a roadmap node via modules (not the daily digest)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={digestForm.notify_whatsapp_milestone}
+                    onCheckedChange={(checked) =>
+                      setDigestForm((prev) => ({ ...prev, notify_whatsapp_milestone: checked }))
                     }
                   />
                 </div>

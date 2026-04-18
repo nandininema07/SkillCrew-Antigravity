@@ -23,7 +23,8 @@ def compose_engagement(
 ) -> dict[str, Any]:
     """
     state may include:
-      engagement_kind: daily_learning_summary | streak_at_risk | inactivity_reengagement
+      engagement_kind: daily_learning_summary | streak_at_risk | inactivity_reengagement |
+        login_welcome | pip_checkpoint_whatsapp | milestone_modules_progress
       locale, user_name, streak_days, inactive_days, xp, level,
       logged_in_today (bool), calendar_date_utc (YYYY-MM-DD),
       leaderboard_xp_rank, leaderboard_total_users,
@@ -48,6 +49,9 @@ def compose_engagement(
         "  * long_absent (3+ days) — voice should sound like a caring human check-in; WhatsApp shorter.\n"
         "  * steady_learner — celebrate consistency for daily_learning_summary; **prominently feature learned_today_summary**.\n"
         "  * daily_learning_summary — **must include learned_today_summary as a core floating summary**; celebrate what they accomplished.\n"
+        "  * login_welcome — short warm welcome back after opening the app; mention streak/xp/level if present; no guilt; under ~600 chars for WhatsApp.\n"
+        "  * pip_checkpoint_whatsapp — celebrate Pip weekly quiz result; include score_percent, week, milestone_id, roadmap_title; concise.\n"
+        "  * milestone_modules_progress — celebrate a newly completed roadmap node; include nodes_completed, nodes_total, percent, milestone_title; no quiz score unless provided.\n"
         "- Include concrete facts from state when present: today's focus task, streak_days, "
         "leaderboard_xp_rank / leaderboard_total_users, **learned_today_summary (especially for daily_learning_summary engagement_kind)**.\n"
         "- For daily_learning_summary: opening should praise/celebrate, then float the learned_today_summary items, then close with motivational momentum.\n"

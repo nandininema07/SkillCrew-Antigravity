@@ -19,6 +19,14 @@ export interface DBProfile {
   notify_whatsapp_digest?: boolean
   /** Twilio: voice recap (optional); same window as WhatsApp */
   notify_voice_daily_learning?: boolean
+  /** Twilio: welcome WhatsApp when you open the dashboard (deduped per UTC day) */
+  notify_whatsapp_login?: boolean
+  /** Twilio: WhatsApp after each Pip weekly checkpoint quiz score */
+  notify_whatsapp_checkpoint?: boolean
+  /** Twilio: WhatsApp when you complete a roadmap milestone node (modules) */
+  notify_whatsapp_milestone?: boolean
+  /** Last login-welcome WhatsApp sent (backend dedupe) */
+  last_whatsapp_login_at?: string | null
   /** HH:mm (24h) in `sparky_digest_timezone` */
   sparky_digest_local_time?: string | null
   /** IANA timezone for digest scheduling */

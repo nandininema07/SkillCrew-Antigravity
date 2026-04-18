@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { extractModuleIdsFromRawBundle, findModuleSkillsInRawBundle } from '@/lib/agents/roadmap-state-helpers'
+import {
+  findMilestoneTitleInBundle,
+  getCompletedMilestoneIdSet,
+  getMilestoneNodeProgress,
+} from '@/lib/roadmap-node-progress'
 import { isMissingSchemaObject } from '@/lib/server/supabase-schema-helpers'
+import { proxyAgent } from '@/lib/server/agent-backend-proxy'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -30,7 +36,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const { data: row, error: loadErr } = await supabase
       .from('user_archie_roadmaps')
-      .select('bundles_raw')
+      .select('bundles_raw, display_title')
       .eq('id', roadmapId)
       .eq('user_id', user.id)
       .maybeSingle()
@@ -52,6 +58,30 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!valid.has(moduleId)) {
       return NextResponse.json({ error: 'Unknown module for this roadmap' }, { status: 400 })
     }
+
+    const { data: doneBefore } = await supabase
+      .from('module_completion_track')
+      .select('module_id')
+      .eq('user_id', user.id)
+      .eq('roadmap_id', roadmapId)
+      .eq('status', 'completed')
+
+    const beforeModuleIds = new Set(
+      (doneBefore || []).map((r) => r.module_id as string).filter(Boolean),
+    )
+    const afterModuleIds = new Set(beforeModuleIds)
+    afterModuleIds.add(moduleId)
+
+    const beforeProgress = getMilestoneNodeProgress(row.bundles_raw, body.roadmap_mode, beforeModuleIds)
+    const afterProgress = getMilestoneNodeProgress(row.bundles_raw, body.roadmap_mode, afterModuleIds)
+    const msBefore = getCompletedMilestoneIdSet(row.bundles_raw, body.roadmap_mode, beforeModuleIds)
+    const msAfter = getCompletedMilestoneIdSet(row.bundles_raw, body.roadmap_mode, afterModuleIds)
+    const newMilestoneIds = [...msAfter].filter((id) => !msBefore.has(id))
+    const firstNewMilestoneId = newMilestoneIds[0]
+    const milestoneTitle =
+      firstNewMilestoneId != null
+        ? findMilestoneTitleInBundle(row.bundles_raw, body.roadmap_mode, firstNewMilestoneId)
+        : null
 
     const skillNames = findModuleSkillsInRawBundle(raw, moduleId) || []
 
@@ -108,6 +138,22 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       kind: 'module_completed',
       payload: { roadmap_id: roadmapId, roadmap_mode: body.roadmap_mode, module_id: moduleId, skills: skillNames },
     })
+
+    if (afterProgress.completed > beforeProgress.completed) {
+      const displayTitle = String((row as { display_title?: string | null }).display_title || '').trim() || null
+      void proxyAgent('/engagement/milestone-modules', {
+        user_id: user.id,
+        roadmap_id: roadmapId,
+        roadmap_mode: body.roadmap_mode,
+        nodes_completed: afterProgress.completed,
+        nodes_total: afterProgress.total,
+        percent: afterProgress.percent,
+        milestone_title: milestoneTitle,
+        roadmap_display_title: displayTitle,
+      }).catch(() => {
+        /* Twilio/backend optional */
+      })
+    }
 
     const { data: doneRows } = await supabase
       .from('module_completion_track')

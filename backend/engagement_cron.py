@@ -965,3 +965,301 @@ def run_streak_risk_reminders(
         "skipped_no_channel_or_deduped": skipped_nothing_to_send,
         "errors": errors,
     }
+
+
+def try_send_login_welcome_whatsapp(
+    *,
+    settings: Any,
+    supabase: Any,
+    user_id: str,
+) -> dict[str, Any]:
+    """One WhatsApp per UTC calendar day after dashboard load (dedupe via last_whatsapp_login_at)."""
+    s = settings
+    sid = getattr(s, "twilio_account_sid", None)
+    token = getattr(s, "twilio_auth_token", None)
+    wa_from = getattr(s, "twilio_whatsapp_from", None)
+    default_cc = (getattr(s, "phone_default_country_code", None) or "1").strip()
+    today_utc = _utc_today_str()
+
+    try:
+        pr = (
+            supabase.table("profiles")
+            .select(
+                "id, phone, full_name, streak, xp, level, notify_whatsapp_login, last_whatsapp_login_at"
+            )
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+        rows = pr.data or []
+    except Exception as e:
+        logger.exception("login welcome profile %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}
+
+    if not rows:
+        return {"ok": True, "status": "skipped", "reason": "profile_not_found"}
+
+    p = rows[0]
+    if not bool(p.get("notify_whatsapp_login", True)):
+        return {"ok": True, "status": "skipped", "reason": "login_whatsapp_disabled"}
+
+    last_at = p.get("last_whatsapp_login_at")
+    if last_at and _same_calendar_utc(str(last_at), today_utc):
+        return {"ok": True, "status": "skipped", "reason": "already_sent_today_utc"}
+
+    if not sid or not token or not str(sid).strip() or not str(token).strip():
+        return {"ok": True, "status": "skipped", "reason": "twilio_not_configured"}
+    if not wa_from or not str(wa_from).strip():
+        return {"ok": True, "status": "skipped", "reason": "twilio_whatsapp_not_configured"}
+
+    to_e164 = normalize_phone_e164(p.get("phone"), default_cc=default_cc)
+    if not to_e164:
+        return {"ok": True, "status": "skipped", "reason": "no_phone"}
+
+    name = (p.get("full_name") or "there").split()[0]
+    msg = f"✅ Login successful! Welcome back to SkillCrew, {name}."
+
+    try:
+        dispatch_twilio(
+            account_sid=str(sid).strip(),
+            auth_token=str(token).strip(),
+            whatsapp_from=str(wa_from).strip(),
+            voice_from=getattr(s, "twilio_voice_from", None),
+            sms_from=getattr(s, "twilio_sms_from", None),
+            to_phone_e164=to_e164,
+            whatsapp_message=msg[:1600],
+            voice_script="",
+            use_whatsapp=True,
+            use_voice=False,
+            use_sms=False,
+        )
+        supabase.table("profiles").update(
+            {"last_whatsapp_login_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("id", user_id).execute()
+        return {"ok": True, "status": "sent", "channels": ["whatsapp"]}
+    except Exception as e:
+        logger.exception("login welcome wa %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}
+
+
+def try_send_pip_checkpoint_whatsapp(
+    *,
+    settings: Any,
+    supabase: Any,
+    user_id: str,
+    roadmap_id: str,
+    milestone_id: str,
+    week: int,
+    score_percent: float,
+    roadmap_title: str | None = None,
+    roadmap_mode: str | None = None,
+) -> dict[str, Any]:
+    """WhatsApp with Pip checkpoint score; deduped per user + roadmap + milestone."""
+    s = settings
+    sid = getattr(s, "twilio_account_sid", None)
+    token = getattr(s, "twilio_auth_token", None)
+    wa_from = getattr(s, "twilio_whatsapp_from", None)
+    default_cc = (getattr(s, "phone_default_country_code", None) or "1").strip()
+
+    try:
+        pr = (
+            supabase.table("profiles")
+            .select("id, phone, full_name, notify_whatsapp_checkpoint")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+        rows = pr.data or []
+    except Exception as e:
+        logger.exception("pip checkpoint profile %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}
+
+    if not rows:
+        return {"ok": True, "status": "skipped", "reason": "profile_not_found"}
+    p = rows[0]
+    if not bool(p.get("notify_whatsapp_checkpoint", True)):
+        return {"ok": True, "status": "skipped", "reason": "checkpoint_whatsapp_disabled"}
+
+    if not sid or not token or not str(sid).strip() or not str(token).strip():
+        return {"ok": True, "status": "skipped", "reason": "twilio_not_configured"}
+    if not wa_from or not str(wa_from).strip():
+        return {"ok": True, "status": "skipped", "reason": "twilio_whatsapp_not_configured"}
+
+    to_e164 = normalize_phone_e164(p.get("phone"), default_cc=default_cc)
+    if not to_e164:
+        return {"ok": True, "status": "skipped", "reason": "no_phone"}
+
+    try:
+        dup = (
+            supabase.table("whatsapp_pip_checkpoint_sent")
+            .select("user_id")
+            .eq("user_id", user_id)
+            .eq("roadmap_id", roadmap_id)
+            .eq("milestone_id", milestone_id)
+            .limit(1)
+            .execute()
+        )
+        if dup.data:
+            return {"ok": True, "status": "skipped", "reason": "already_sent_for_milestone"}
+    except Exception as e:
+        logger.exception("pip checkpoint dedupe select %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}
+
+    name = (p.get("full_name") or "there").split()[0]
+    llm_kw = {
+        "groq_api_key": getattr(s, "groq_api_key", None),
+        "groq_model": getattr(s, "groq_model", "llama-3.3-70b-versatile"),
+        "google_api_key": getattr(s, "google_api_key", None),
+        "gemini_model": getattr(s, "gemini_model", "gemini-2.0-flash"),
+    }
+    rt = (roadmap_title or "Your roadmap").strip()
+    mode_lbl = "Skills" if (roadmap_mode or "").strip() == "skills" else "Job-ready"
+    state: dict[str, Any] = {
+        "engagement_kind": "pip_checkpoint_whatsapp",
+        "locale": "en",
+        "user_name": name,
+        "score_percent": round(float(score_percent), 1),
+        "milestone_id": milestone_id,
+        "week": int(week),
+        "roadmap_title": rt,
+        "roadmap_mode_label": mode_lbl,
+        "channels_requested": ["whatsapp"],
+        "performance_hint": "steady_learner",
+    }
+
+    try:
+        composed = compose_engagement(**llm_kw, state=state)
+        msg = str(composed.get("whatsapp_message") or "").strip()
+        if not msg:
+            msg = (
+                f"🎯 Pip checkpoint — {score_percent:.0f}% on week {week} ({mode_lbl}).\n"
+                f"{rt}\n\nNice work, {name}! Keep the momentum."
+            )
+        dispatch_twilio(
+            account_sid=str(sid).strip(),
+            auth_token=str(token).strip(),
+            whatsapp_from=str(wa_from).strip(),
+            voice_from=getattr(s, "twilio_voice_from", None),
+            sms_from=getattr(s, "twilio_sms_from", None),
+            to_phone_e164=to_e164,
+            whatsapp_message=msg[:1600],
+            voice_script="",
+            use_whatsapp=True,
+            use_voice=False,
+            use_sms=False,
+        )
+        try:
+            supabase.table("whatsapp_pip_checkpoint_sent").insert(
+                {
+                    "user_id": user_id,
+                    "roadmap_id": roadmap_id,
+                    "milestone_id": milestone_id,
+                }
+            ).execute()
+        except Exception:
+            logger.debug("pip checkpoint dedupe insert after send failed", exc_info=True)
+        return {"ok": True, "status": "sent", "channels": ["whatsapp"]}
+    except Exception as e:
+        logger.exception("pip checkpoint wa %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}
+
+
+def try_send_milestone_modules_whatsapp(
+    *,
+    settings: Any,
+    supabase: Any,
+    user_id: str,
+    roadmap_id: str,
+    roadmap_mode: str,
+    nodes_completed: int,
+    nodes_total: int,
+    percent: int,
+    milestone_title: str | None = None,
+    roadmap_display_title: str | None = None,
+) -> dict[str, Any]:
+    """WhatsApp when a roadmap milestone node is newly completed via modules."""
+    s = settings
+    sid = getattr(s, "twilio_account_sid", None)
+    token = getattr(s, "twilio_auth_token", None)
+    wa_from = getattr(s, "twilio_whatsapp_from", None)
+    default_cc = (getattr(s, "phone_default_country_code", None) or "1").strip()
+
+    try:
+        pr = (
+            supabase.table("profiles")
+            .select("id, phone, full_name, notify_whatsapp_milestone")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+        rows = pr.data or []
+    except Exception as e:
+        logger.exception("milestone modules profile %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}
+
+    if not rows:
+        return {"ok": True, "status": "skipped", "reason": "profile_not_found"}
+    p = rows[0]
+    if not bool(p.get("notify_whatsapp_milestone", True)):
+        return {"ok": True, "status": "skipped", "reason": "milestone_whatsapp_disabled"}
+
+    if not sid or not token or not str(sid).strip() or not str(token).strip():
+        return {"ok": True, "status": "skipped", "reason": "twilio_not_configured"}
+    if not wa_from or not str(wa_from).strip():
+        return {"ok": True, "status": "skipped", "reason": "twilio_whatsapp_not_configured"}
+
+    to_e164 = normalize_phone_e164(p.get("phone"), default_cc=default_cc)
+    if not to_e164:
+        return {"ok": True, "status": "skipped", "reason": "no_phone"}
+
+    name = (p.get("full_name") or "there").split()[0]
+    llm_kw = {
+        "groq_api_key": getattr(s, "groq_api_key", None),
+        "groq_model": getattr(s, "groq_model", "llama-3.3-70b-versatile"),
+        "google_api_key": getattr(s, "google_api_key", None),
+        "gemini_model": getattr(s, "gemini_model", "gemini-2.0-flash"),
+    }
+    disp = (roadmap_display_title or "Your roadmap").strip()
+    mt = (milestone_title or "Milestone").strip()
+    state: dict[str, Any] = {
+        "engagement_kind": "milestone_modules_progress",
+        "locale": "en",
+        "user_name": name,
+        "roadmap_display_title": disp,
+        "roadmap_id": roadmap_id,
+        "roadmap_mode": roadmap_mode,
+        "milestone_title": mt,
+        "nodes_completed": int(nodes_completed),
+        "nodes_total": int(nodes_total),
+        "percent": int(percent),
+        "channels_requested": ["whatsapp"],
+        "performance_hint": "steady_learner",
+    }
+
+    try:
+        composed = compose_engagement(**llm_kw, state=state)
+        msg = str(composed.get("whatsapp_message") or "").strip()
+        if not msg:
+            msg = (
+                f"🚀 Node cleared: {mt}\n"
+                f"{disp}\n"
+                f"Progress: {nodes_completed}/{nodes_total} milestones ({percent}%).\n"
+                f"Great work, {name}!"
+            )
+        dispatch_twilio(
+            account_sid=str(sid).strip(),
+            auth_token=str(token).strip(),
+            whatsapp_from=str(wa_from).strip(),
+            voice_from=getattr(s, "twilio_voice_from", None),
+            sms_from=getattr(s, "twilio_sms_from", None),
+            to_phone_e164=to_e164,
+            whatsapp_message=msg[:1600],
+            voice_script="",
+            use_whatsapp=True,
+            use_voice=False,
+            use_sms=False,
+        )
+        return {"ok": True, "status": "sent", "channels": ["whatsapp"]}
+    except Exception as e:
+        logger.exception("milestone modules wa %s", user_id)
+        return {"ok": False, "status": "error", "detail": str(e)}

@@ -62,7 +62,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const { data: gateRow, error: gateErr } = await supabase
       .from('user_archie_roadmaps')
-      .select('week_gate_progress')
+      .select('week_gate_progress, display_title')
       .eq('id', roadmapId)
       .eq('user_id', user.id)
       .maybeSingle()
@@ -257,6 +257,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         }
       }
     }
+
+    const roadmapTitle = String((gateRow as { display_title?: string | null }).display_title || '').trim() || null
+    void proxyAgent('/engagement/pip-checkpoint', {
+      user_id: user.id,
+      roadmap_id: roadmapId,
+      milestone_id: milestoneId,
+      week: quizWeek,
+      score_percent: scorePct,
+      roadmap_title: roadmapTitle,
+      roadmap_mode: body.roadmap_mode,
+    }).catch(() => {
+      /* Twilio/backend optional */
+    })
 
     const userEmail = user.email?.trim()
     if (userEmail) {

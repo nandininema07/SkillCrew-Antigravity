@@ -1,20 +1,9 @@
-# dependencies
-node_modules/
-
-# Next.js
-.next/
-out/
-
-# turbopack / cache
-frontend/dev/cache/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# env files (VERY IMPORTANT)
 .env
-.env.local
-.env.*
+# Virtual Environment
+backend/venv/
+venv/
+ENV/
+
+# Python Cache
+**/__pycache__/
+*.pyc

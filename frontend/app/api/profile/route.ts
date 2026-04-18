@@ -45,6 +45,9 @@ export async function PUT(request: Request) {
       learning_direction,
       notify_whatsapp_digest,
       notify_voice_daily_learning,
+      notify_whatsapp_login,
+      notify_whatsapp_checkpoint,
+      notify_whatsapp_milestone,
       sparky_digest_local_time,
       sparky_digest_timezone,
     } = body
@@ -62,6 +65,9 @@ export async function PUT(request: Request) {
     if (learning_direction !== undefined) updateData.learning_direction = learning_direction
     if (notify_whatsapp_digest !== undefined) updateData.notify_whatsapp_digest = notify_whatsapp_digest
     if (notify_voice_daily_learning !== undefined) updateData.notify_voice_daily_learning = notify_voice_daily_learning
+    if (notify_whatsapp_login !== undefined) updateData.notify_whatsapp_login = notify_whatsapp_login
+    if (notify_whatsapp_checkpoint !== undefined) updateData.notify_whatsapp_checkpoint = notify_whatsapp_checkpoint
+    if (notify_whatsapp_milestone !== undefined) updateData.notify_whatsapp_milestone = notify_whatsapp_milestone
     if (sparky_digest_local_time !== undefined) updateData.sparky_digest_local_time = sparky_digest_local_time
     if (sparky_digest_timezone !== undefined) updateData.sparky_digest_timezone = sparky_digest_timezone
 

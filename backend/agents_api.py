@@ -200,6 +200,31 @@ class DigestIfDueBody(BaseModel):
     user_id: str = Field(..., min_length=1)
 
 
+class LoginWelcomeBody(BaseModel):
+    user_id: str = Field(..., min_length=1)
+
+
+class PipCheckpointWhatsAppBody(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    roadmap_id: str = Field(..., min_length=1)
+    milestone_id: str = Field(..., min_length=1)
+    week: int = Field(..., ge=1)
+    score_percent: float = Field(..., ge=0, le=100)
+    roadmap_title: str | None = None
+    roadmap_mode: str | None = None
+
+
+class MilestoneModulesWhatsAppBody(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    roadmap_id: str = Field(..., min_length=1)
+    roadmap_mode: str = Field(..., min_length=1)
+    nodes_completed: int = Field(..., ge=0)
+    nodes_total: int = Field(..., ge=0)
+    percent: int = Field(..., ge=0, le=100)
+    milestone_title: str | None = None
+    roadmap_display_title: str | None = None
+
+
 class CoachBody(BaseModel):
     payload: dict[str, Any]
 
@@ -460,6 +485,73 @@ def engagement_digest_if_due(body: DigestIfDueBody) -> dict[str, Any]:
         raise
     except Exception as e:
         logger.exception("engagement digest-if-due")
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.post("/engagement/login-welcome", dependencies=[Depends(verify_agent_secret)])
+def engagement_login_welcome(body: LoginWelcomeBody) -> dict[str, Any]:
+    from engagement_cron import try_send_login_welcome_whatsapp
+
+    try:
+        supabase = _service_supabase()
+        return try_send_login_welcome_whatsapp(
+            settings=_s(),
+            supabase=supabase,
+            user_id=body.user_id.strip(),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("engagement login-welcome")
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.post("/engagement/pip-checkpoint", dependencies=[Depends(verify_agent_secret)])
+def engagement_pip_checkpoint(body: PipCheckpointWhatsAppBody) -> dict[str, Any]:
+    from engagement_cron import try_send_pip_checkpoint_whatsapp
+
+    try:
+        supabase = _service_supabase()
+        return try_send_pip_checkpoint_whatsapp(
+            settings=_s(),
+            supabase=supabase,
+            user_id=body.user_id.strip(),
+            roadmap_id=body.roadmap_id.strip(),
+            milestone_id=body.milestone_id.strip(),
+            week=body.week,
+            score_percent=body.score_percent,
+            roadmap_title=body.roadmap_title,
+            roadmap_mode=body.roadmap_mode,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("engagement pip-checkpoint")
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.post("/engagement/milestone-modules", dependencies=[Depends(verify_agent_secret)])
+def engagement_milestone_modules(body: MilestoneModulesWhatsAppBody) -> dict[str, Any]:
+    from engagement_cron import try_send_milestone_modules_whatsapp
+
+    try:
+        supabase = _service_supabase()
+        return try_send_milestone_modules_whatsapp(
+            settings=_s(),
+            supabase=supabase,
+            user_id=body.user_id.strip(),
+            roadmap_id=body.roadmap_id.strip(),
+            roadmap_mode=body.roadmap_mode.strip(),
+            nodes_completed=body.nodes_completed,
+            nodes_total=body.nodes_total,
+            percent=body.percent,
+            milestone_title=body.milestone_title,
+            roadmap_display_title=body.roadmap_display_title,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("engagement milestone-modules")
         raise HTTPException(status_code=502, detail=str(e)) from e
 
 

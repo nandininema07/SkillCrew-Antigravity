@@ -17,6 +17,9 @@ export function DashboardSessionSync() {
         await fetch('/api/activity/daily-ping', { method: 'POST', credentials: 'include' })
         if (cancelled) return
         await fetchAndApplyProfileToStore()
+        void fetch('/api/sparky/login-welcome', { method: 'POST', credentials: 'include' }).catch(() => {
+          /* Twilio/backend optional */
+        })
         void fetch('/api/sparky/digest-if-due', { method: 'POST', credentials: 'include' }).catch(() => {
           /* Twilio/backend optional */
         })
